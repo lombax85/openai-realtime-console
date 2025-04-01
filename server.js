@@ -2,6 +2,8 @@ import express from "express";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import "dotenv/config";
+import axios from "axios";
+import * as cheerio from "cheerio";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -37,6 +39,32 @@ app.get("/token", async (req, res) => {
   } catch (error) {
     console.error("Token generation error:", error);
     res.status(500).json({ error: "Failed to generate token" });
+  }
+});
+
+// API route for Logotel employees
+app.get('/logotel-employees', async (req, res) => {
+  try {
+    const response = await axios.get('https://www.logotel.it/chi-siamo/logotel-people/');
+    const html = response.data;
+    const $ = cheerio.load(html);
+    
+    const employees = [];
+    
+    $('li.lglt-team--person').each((i, elem) => {
+      const name = $(elem).find('h3').text().trim();
+      const role = $(elem).find('h4').text().trim();
+      if (name && role) {
+        employees.push({ name, role });
+      }
+    });
+
+    console.log(employees);
+    
+    res.json(employees);
+  } catch (error) {
+    console.error('Error fetching Logotel employees:', error);
+    res.status(500).json({ error: 'Unable to fetch employees' });
   }
 });
 
