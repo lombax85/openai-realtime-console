@@ -43,9 +43,19 @@ app.get("/token", async (req, res) => {
 });
 
 // API route for Logotel employees
+let logotelEmployeesCache = null;
 app.get('/logotel-employees', async (req, res) => {
+  console.log("Fetching Logotel employees");
+  let response = null;
   try {
-    const response = await axios.get('https://www.logotel.it/chi-siamo/logotel-people/');
+    if (logotelEmployeesCache) {
+      console.log('Returning cached data');
+      response = logotelEmployeesCache;
+    } else {
+      console.log('Fetching new data');
+      response = await axios.get('https://www.logotel.it/chi-siamo/logotel-people/');
+    }
+    logotelEmployeesCache = response;
     const html = response.data;
     const $ = cheerio.load(html);
     

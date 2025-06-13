@@ -93,7 +93,11 @@ export default function App() {
       if (!message.timestamp) {
         message.timestamp = timestamp;
       }
-      setEvents((prev) => [message, ...prev]);
+      console.log("App: Sending client event:", message.type);
+      setEvents((prev) => {
+        console.log("App: Adding client event to array, prev length:", prev.length);
+        return [message, ...prev];
+      });
     } else {
       console.error(
         "Failed to send message - no data channel available",
@@ -122,6 +126,14 @@ export default function App() {
     sendClientEvent({ type: "response.create" });
   }
 
+  // Debug: Monitor events array changes
+  useEffect(() => {
+    console.log("App: Events array changed, length:", events.length);
+    if (events.length > 0) {
+      console.log("App: Latest event:", events[0]?.type);
+    }
+  }, [events]);
+
   // Attach event listeners to the data channel when a new one is created
   useEffect(() => {
     if (dataChannel) {
@@ -132,7 +144,11 @@ export default function App() {
           event.timestamp = new Date().toLocaleTimeString();
         }
 
-        setEvents((prev) => [event, ...prev]);
+        console.log("App: Received new server event:", event.type);
+        setEvents((prev) => {
+          console.log("App: Adding event to array, prev length:", prev.length);
+          return [event, ...prev];
+        });
       });
 
       // Set session active when the data channel is opened

@@ -62,6 +62,7 @@ const sessionUpdate = {
 };
 
 function FunctionCallOutput({ functionCallOutput, employees }) {
+  console.log("FunctionCallOutput");
   if (functionCallOutput.name === "display_color_palette") {
     const { theme, colors } = JSON.parse(functionCallOutput.arguments);
 
@@ -89,6 +90,7 @@ function FunctionCallOutput({ functionCallOutput, employees }) {
   }
 
   if (functionCallOutput.name === "get_person_info") {
+    console.log("get_person_info", functionCallOutput);
     const { name, surname } = JSON.parse(functionCallOutput.arguments);
     
     return (
@@ -126,78 +128,111 @@ export default function ToolPanel({
   const [functionAdded, setFunctionAdded] = useState(false);
   const [functionCallOutput, setFunctionCallOutput] = useState(null);
   const [employees, setEmployees] = useState(null);
+  const [lastProcessedEventsLength, setLastProcessedEventsLength] = useState(0);
+
+  console.log("ToolPanel render - events length:", events?.length, "lastProcessedEventsLength:", lastProcessedEventsLength);
 
   useEffect(() => {
-    if (!events || events.length === 0) return;
+    console.log("useEffect triggered - events length:", events?.length, "lastProcessed:", lastProcessedEventsLength);
+    
+    if (!events || events.length === 0) {
+      console.log("No events available");
+      return;
+    }
 
     const firstEvent = events[events.length - 1];
     if (!functionAdded && firstEvent.type === "session.created") {
+      console.log("Adding functions to session");
       sendClientEvent(sessionUpdate);
       setFunctionAdded(true);
     }
 
-    const mostRecentEvent = events[0];
-    if (
-      mostRecentEvent.type === "response.done" &&
-      mostRecentEvent.response.output
-    ) {
-      mostRecentEvent.response.output.forEach((output) => {
-        if (output.type === "function_call") {
-          if (output.name === "display_color_palette") {
-            setFunctionCallOutput(output);
-            setTimeout(() => {
-              sendClientEvent({
-                type: "response.create",
-                response: {
-                  instructions: `
-                  ask for feedback about the color palette - don't repeat 
-                  the colors, just ask if they like the colors.
-                `,
-                },
-              });
-            }, 500);
-          } else if (output.name === "get_person_info") {
-            setFunctionCallOutput(output);
-            // Fetch employees data when get_person_info is called
-            fetch('/logotel-employees')
-              .then(response => response.json())
-              .then(data => {
-                setEmployees(data);
-                setTimeout(() => {
-                  sendClientEvent({
-                    type: "response.create",
-                    response: {
-                      instructions: `
-                      mostra i dati recuperati: ${JSON.stringify(data)}
-                    `,
-                    },
-                  });
-                }, 500);
-              })
-              .catch(error => {
-                console.error('Error fetching employees:', error);
-                setTimeout(() => {
-                  sendClientEvent({
-                    type: "response.create",
-                    response: {
-                      instructions: `
-                      Si è verificato un errore nel recupero dei dati. Vuoi riprovare?
-                    `,
-                    },
-                  });
-                }, 500);
-              });
-          }
-        }
-      });
+    // Processa solo i nuovi eventi che non erano presenti nell'ultima elaborazione
+    // Gli eventi sono ordinati dal più recente [0] al più vecchio [length-1]
+    // I nuovi eventi sono dall'indice 0 fino a (events.length - lastProcessedEventsLength - 1)
+    const newEventsCount = events.length - lastProcessedEventsLength;
+    console.log("New events to process:", newEventsCount);
+    
+    let eventsProcessed = 0;
+    for (let i = 0; i < newEventsCount; i++) {
+      console.log("Processing event", i, "of", newEventsCount, "- Event type:", events[i]?.type);
+      eventsProcessed++;
+      const event = events[i];
+      if (!event) continue;
+
+      if (
+        event.type === "response.done" &&
+        event.response.output
+      ) {
+        console.log("Found response.done event:", event);
+        event.response.output.forEach((output) => {
+          console.log("Processing output:", output.name);
+          //if (output.type === "function_call") {
+            if (output.name === "display_color_palette") {
+              setFunctionCallOutput(output);
+              setTimeout(() => {
+                sendClientEvent({
+                  type: "response.create",
+                  response: {
+                    instructions: `
+                    ask for feedback about the color palette - don't repeat 
+                    the colors, just ask if they like the colors.
+                  `,
+                  },
+                });
+              }, 500);
+            } else if (output.name === "get_person_info") {
+              setFunctionCallOutput(output);
+              // Fetch employees data when get_person_info is called
+              fetch('/logotel-employees')
+                .then(response => response.json())
+                .then(data => {
+                  setEmployees(data);
+                  setTimeout(() => {
+                    sendClientEvent({
+                      type: "response.create",
+                      response: {
+                        instructions: `
+                        mostra i dati recuperati: ${JSON.stringify(data)}
+                      `,
+                      },
+                    });
+                  }, 500);
+                })
+                .catch(error => {
+                  console.error('Error fetching employees:', error);
+                  setTimeout(() => {
+                    sendClientEvent({
+                      type: "response.create",
+                      response: {
+                        instructions: `
+                        Si è verificato un errore nel recupero dei dati. Vuoi riprovare?
+                      `,
+                      },
+                    });
+                  }, 500);
+                });
+            }
+          //}
+        });
+      }
     }
-  }, [events]);
+
+    console.log("Events processed in this cycle:", eventsProcessed);
+
+    // Aggiorna la lunghezza degli eventi processati
+    if (events.length > lastProcessedEventsLength) {
+      console.log("Updating lastProcessedEventsLength from", lastProcessedEventsLength, "to", events.length);
+      setLastProcessedEventsLength(events.length);
+    }
+  }, [events, lastProcessedEventsLength, isSessionActive, sendClientEvent]);
 
   useEffect(() => {
     if (!isSessionActive) {
       setFunctionAdded(false);
       setFunctionCallOutput(null);
       setEmployees(null);
+      setLastProcessedEventsLength(0);
     }
   }, [isSessionActive]);
 
