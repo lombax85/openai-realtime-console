@@ -62,7 +62,7 @@ const sessionUpdate = {
 };
 
 function FunctionCallOutput({ functionCallOutput, employees }) {
-  console.log("FunctionCallOutput");
+  //console.log("FunctionCallOutput");
   if (functionCallOutput.name === "display_color_palette") {
     const { theme, colors } = JSON.parse(functionCallOutput.arguments);
 
@@ -90,7 +90,7 @@ function FunctionCallOutput({ functionCallOutput, employees }) {
   }
 
   if (functionCallOutput.name === "get_person_info") {
-    console.log("get_person_info", functionCallOutput);
+    //console.log("get_person_info", functionCallOutput);
     const { name, surname } = JSON.parse(functionCallOutput.arguments);
     
     return (
@@ -130,10 +130,10 @@ export default function ToolPanel({
   const [employees, setEmployees] = useState(null);
   const [lastProcessedEventsLength, setLastProcessedEventsLength] = useState(0);
 
-  console.log("ToolPanel render - events length:", events?.length, "lastProcessedEventsLength:", lastProcessedEventsLength);
+  //console.log("ToolPanel render - events length:", events?.length, "lastProcessedEventsLength:", lastProcessedEventsLength);
 
   useEffect(() => {
-    console.log("useEffect triggered - events length:", events?.length, "lastProcessed:", lastProcessedEventsLength);
+    //console.log("useEffect triggered - events length:", events?.length, "lastProcessed:", lastProcessedEventsLength);
     
     if (!events || events.length === 0) {
       console.log("No events available");
@@ -151,11 +151,11 @@ export default function ToolPanel({
     // Gli eventi sono ordinati dal più recente [0] al più vecchio [length-1]
     // I nuovi eventi sono dall'indice 0 fino a (events.length - lastProcessedEventsLength - 1)
     const newEventsCount = events.length - lastProcessedEventsLength;
-    console.log("New events to process:", newEventsCount);
+    //console.log("New events to process:", newEventsCount);
     
     let eventsProcessed = 0;
     for (let i = 0; i < newEventsCount; i++) {
-      console.log("Processing event", i, "of", newEventsCount, "- Event type:", events[i]?.type);
+      //console.log("Processing event", i, "of", newEventsCount, "- Event type:", events[i]?.type);
       eventsProcessed++;
       const event = events[i];
       if (!event) continue;
@@ -164,9 +164,9 @@ export default function ToolPanel({
         event.type === "response.done" &&
         event.response.output
       ) {
-        console.log("Found response.done event:", event);
+        //console.log("Found response.done event:", event);
         event.response.output.forEach((output) => {
-          console.log("Processing output:", output.name);
+          //console.log("Processing output:", output.name);
           //if (output.type === "function_call") {
             if (output.name === "display_color_palette") {
               setFunctionCallOutput(output);
@@ -182,6 +182,7 @@ export default function ToolPanel({
                 });
               }, 500);
             } else if (output.name === "get_person_info") {
+              console.log("get_person_info", output);
               setFunctionCallOutput(output);
               // Fetch employees data when get_person_info is called
               fetch('/logotel-employees')
@@ -189,6 +190,7 @@ export default function ToolPanel({
                 .then(data => {
                   setEmployees(data);
                   setTimeout(() => {
+                    console.log("sending response.create", data);
                     sendClientEvent({
                       type: "response.create",
                       response: {
@@ -218,11 +220,11 @@ export default function ToolPanel({
       }
     }
 
-    console.log("Events processed in this cycle:", eventsProcessed);
+    //console.log("Events processed in this cycle:", eventsProcessed);
 
     // Aggiorna la lunghezza degli eventi processati
     if (events.length > lastProcessedEventsLength) {
-      console.log("Updating lastProcessedEventsLength from", lastProcessedEventsLength, "to", events.length);
+      //console.log("Updating lastProcessedEventsLength from", lastProcessedEventsLength, "to", events.length);
       setLastProcessedEventsLength(events.length);
     }
   }, [events, lastProcessedEventsLength, isSessionActive, sendClientEvent]);

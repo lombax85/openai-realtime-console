@@ -93,9 +93,9 @@ export default function App() {
       if (!message.timestamp) {
         message.timestamp = timestamp;
       }
-      console.log("App: Sending client event:", message.type);
+      //console.log("App: Sending client event:", message.type);
       setEvents((prev) => {
-        console.log("App: Adding client event to array, prev length:", prev.length);
+        //console.log("App: Adding client event to array, prev length:", prev.length);
         return [message, ...prev];
       });
     } else {
@@ -128,9 +128,9 @@ export default function App() {
 
   // Debug: Monitor events array changes
   useEffect(() => {
-    console.log("App: Events array changed, length:", events.length);
+    //console.log("App: Events array changed, length:", events.length);
     if (events.length > 0) {
-      console.log("App: Latest event:", events[0]?.type);
+      //console.log("App: Latest event:", events[0]?.type);
     }
   }, [events]);
 
@@ -144,9 +144,9 @@ export default function App() {
           event.timestamp = new Date().toLocaleTimeString();
         }
 
-        console.log("App: Received new server event:", event.type);
+        //console.log("App: Received new server event:", event.type);
         setEvents((prev) => {
-          console.log("App: Adding event to array, prev length:", prev.length);
+          //console.log("App: Adding event to array, prev length:", prev.length);
           return [event, ...prev];
         });
       });
